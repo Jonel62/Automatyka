@@ -76,18 +76,6 @@ app.layout = html.Div([
     html.H1("Tempomat (PI)", style={"textAlign": "center"}),
 
     html.Div([
-        html.Div([
-            html.Label("Prędkość początkowa [km/h]"),
-            dcc.Slider(0, 100, 1, value=0, id="v0-slider",
-                       marks={0: "0", 50: "50", 100: "100"},
-                       tooltip={"placement": "bottom", "always_visible": True}),
-        ], style={"padding": "8px 0"}),
-        html.Div([
-            html.Label("Prędkość zadana [km/h]"),
-            dcc.Slider(10, 200, 5, value=60, id="vd-slider",
-                       marks={10: "10", 60: "60", 120: "120", 180: "180"},
-                       tooltip={"placement": "bottom", "always_visible": True}),
-        ], style={"padding": "8px 0"}),
         dcc.Tabs([
             dcc.Tab(label='Wspolczynniki i parametry', children=[
                 html.Div([
@@ -105,7 +93,7 @@ app.layout = html.Div([
                 html.Div([
                     html.Label("Opór toczenia (c_rr)"),
                     dcc.Slider(0.001, 0.05, 0.001, value=0.012, id="opory-slider",
-                               marks={0.001: "0.001", 0.01: "0.010", 0.02: "0.020", 0.03: "0.030"},
+                               marks={0.001: "0.001", 0.01: "0.010", 0.02: "0.020", 0.03: "0.030", 0.05: "0.050"},
                                tooltip={"placement": "bottom", "always_visible": True}),
                 ], style={"padding": "8px 0"}),
                 html.Div([
@@ -126,11 +114,23 @@ app.layout = html.Div([
                 html.Div([
                     html.Label("Wyboistość – częstotliwość [Hz]"),
                     dcc.Slider(0.01, 1.0, 0.01, value=0.1, id="freq-slider",
-                               marks={0.01: "0.01", 0.1: "0.1", 0.5: "0.5", 1.0: "1.0"},
+                               marks={0.01: "0.01", 0.1: "0.1", 0.5: "0.5", 1: "1.0"},
                                tooltip={"placement": "bottom", "always_visible": True}),
                 ], style={"padding": "8px 0"})
             ]),
-            dcc.Tab(label='Zmiana prędkości zadanej', children=[
+            dcc.Tab(label='Prędkość', children=[
+                html.Div([
+                    html.Label("Prędkość początkowa [km/h]"),
+                    dcc.Slider(0, 100, 1, value=0, id="v0-slider",
+                               marks={0: "0", 50: "50", 100: "100"},
+                               tooltip={"placement": "bottom", "always_visible": True}),
+                ], style={"padding": "8px 0"}),
+                html.Div([
+                    html.Label("Prędkość zadana [km/h]"),
+                    dcc.Slider(10, 200, 5, value=60, id="vd-slider",
+                               marks={10: "10", 60: "60", 120: "120", 180: "180"},
+                               tooltip={"placement": "bottom", "always_visible": True}),
+                ], style={"padding": "8px 0"}),
                 html.Div([
                     html.Label("Druga prędkość zadana [km/h]"),
                     dcc.Slider(10, 200, 5, value=80, id="vd2-slider",
