@@ -128,7 +128,7 @@ app.layout = html.Div([
                 html.Div([
                     html.Label("Prędkość zadana [km/h]"),
                     dcc.Slider(10, 200, 5, value=60, id="vd-slider",
-                               marks={10: "10", 60: "60", 120: "120", 180: "180"},
+                               marks={10: "10", 60: "60", 120: "120", 180: "180", 200: "200"},
                                tooltip={"placement": "bottom", "always_visible": True}),
                 ], style={"padding": "8px 0"}),
                 html.Div([
