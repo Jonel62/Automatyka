@@ -171,14 +171,14 @@ app.layout = html.Div(
                     children=[
                         html.Div(
                             [
-                                html.Label("Wzmocnienie Kp (domyślnie 10)"),
-                                html.Div(dcc.Slider(1, 60, 1, value=10, id="kp-slider", marks={1: "1", 15: "15", 30: "30", 45: "45", 60: "60"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Label("Wzmocnienie Kp"),
+                                html.Div(dcc.Slider(1, 60, 1, value=10, id="kp-slider", marks={1: "1", 15: "15", 10: "10", 30: "30", 45: "45", 60: "60"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                                 html.Label("Stała całkowania Ti [s]"),
                                 html.Div(dcc.Slider(1, 20, 1, value=5, id="ti-slider", marks={1: "1", 5: "5", 10: "10", 20: "20"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                             ],
                             style={"maxWidth": "520px", "margin": "0 auto", "gap": "20px", "padding": "20px"},
                         )
-                    ],
+                    ]
                 ),
                 dcc.Tab(
                     label="Samochód i droga",
@@ -286,7 +286,7 @@ def update_plots(
     # --- wykres prędkości z autoskalowaniem górnej granicy ---
     fig_speed = go.Figure()
     fig_speed.add_trace(go.Scatter(x=time, y=speed, name="Prędkość pojazdu [km/h]", line=dict(color="blue")))
-    fig_speed.add_trace(go.Scatter(x=time, y=vdtraj, name="Prędkość zadana [km/h]", line=dict(color="black", dash="dot")))
+    fig_speed.add_trace(go.Scatter(x=time, y=vdtraj, name="Prędkość zadana [km/h]", line=dict(color="red", dash="dot")))
     max_speed_sim = max(speed) if len(speed) > 0 else 1.0
     speed_axis_fixed = max(v0, 1.2 * vd, 1.2 * vd2)
     speed_axis_max = max(max_speed_sim * 1.05, speed_axis_fixed)
