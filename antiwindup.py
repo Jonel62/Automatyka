@@ -122,15 +122,14 @@ def symulacja(
     return time, speed_kmh, F_drive, F_aero, F_slope, F_damp, vd_traj, angle_traj
 
 
-def generuj_nachylenia(Tsin=TSIN_DEFAULT, Tp=TP_DEFAULT, up_angle=12.0, down_angle=-5.0):
+def generuj_nachylenia(Tsin=TSIN_DEFAULT, Tp=TP_DEFAULT, angle_deg=0.0):
     N = int(Tsin / Tp)
     nachylenia = np.zeros(N)
-    N1 = int(N * 0.35)
-    N2 = int(N * 0.3)
-    nachylenia[:N1] = 0.0
-    nachylenia[N1:N1+N2] = up_angle
-    nachylenia[N1+N2:] = down_angle
+    nachylenia[:] = angle_deg
+
     return nachylenia
+
+
 
 
 # --- UI: trzy zakładki (Prędkość, Regulator, Samochód) ---
@@ -142,20 +141,29 @@ app.layout = html.Div(
                 dcc.Tab(
                     label="Prędkość",
                     children=[
-                        html.Div(
-                            [
+                    html.Div(
+                        style={
+                            "display": "grid",
+                            "gridTemplateColumns": "1fr 1fr",
+                            "gap": "20px",
+                            "padding": "20px"
+                        },
+                        children=[
+                            html.Div([
                                 html.Label("Prędkość początkowa [km/h]"),
-                                html.Div(dcc.Slider(0, 100, 1, value=0, id="v0-slider", marks={0: "0", 50: "50", 100: "100"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Div(dcc.Slider(0, 100, 1, value=0, id="v0-slider", marks={0: "0", 50: "50", 100: "100"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                                 html.Label("Prędkość zadana [km/h]"),
-                                html.Div(dcc.Slider(10, 200, 5, value=60, id="vd-slider", marks={10: "10", 60: "60", 120: "120", 180: "180", 200: "200"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Div(dcc.Slider(10, 200, 5, value=60, id="vd-slider", marks={10: "10", 60: "60", 120: "120", 180: "180", 200: "200"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
+                            ]),
+                            html.Div([
                                 html.Label("Druga prędkość zadana [km/h]"),
-                                html.Div(dcc.Slider(10, 200, 5, value=80, id="vd2-slider", marks={10: "10", 80: "80", 150: "150", 200: "200"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Div(dcc.Slider(10, 200, 5, value=80, id="vd2-slider", marks={10: "10", 80: "80", 150: "150", 200: "200"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                                 html.Label("Czas zmiany prędkości [s]"),
-                                html.Div(dcc.Slider(10, 150, 5, value=60, id="tchange-slider", marks={10: "10", 60: "60", 120: "120", 150: "150"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Div(dcc.Slider(10, 150, 5, value=60, id="tchange-slider", marks={10: "10", 60: "60", 120: "120", 150: "150"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                                 html.Div([html.Label("Włącz zmienną prędkość"), dcc.Checklist(options=[{"label": "Tak", "value": "on"}], id="varspeed-check", value=[])], style={"padding": "6px 0"}),
-                            ],
-                            style={"maxWidth": "520px", "margin": "0 auto"},
-                        )
+                            ]),
+                        ]
+                    )
                     ],
                 ),
                 dcc.Tab(
@@ -164,20 +172,52 @@ app.layout = html.Div(
                         html.Div(
                             [
                                 html.Label("Wzmocnienie Kp (domyślnie 10)"),
-                                html.Div(dcc.Slider(1, 60, 1, value=10, id="kp-slider", marks={1: "1", 15: "15", 30: "30", 45: "45", 60: "60"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Div(dcc.Slider(1, 60, 1, value=10, id="kp-slider", marks={1: "1", 15: "15", 30: "30", 45: "45", 60: "60"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                                 html.Label("Stała całkowania Ti [s]"),
-                                html.Div(dcc.Slider(1, 20, 1, value=5, id="ti-slider", marks={1: "1", 5: "5", 10: "10", 20: "20"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Div(dcc.Slider(1, 20, 1, value=5, id="ti-slider", marks={1: "1", 5: "5", 10: "10", 20: "20"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
                             ],
-                            style={"maxWidth": "520px", "margin": "0 auto"},
+                            style={"maxWidth": "520px", "margin": "0 auto", "gap": "20px", "padding": "20px"},
                         )
                     ],
                 ),
                 dcc.Tab(
-                    label="Samochód",
+                    label="Samochód i droga",
                     children=[
-                        html.Div([html.Label("Typ samochodu"), html.Div(dcc.Dropdown(options=[{"label": PRESETS[k]["label"], "value": k} for k in PRESETS], value="compact", id="car-dropdown"), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"})]),
-                        html.Div([html.Label("Wyboistość: amplituda siły [N] (opcjonalnie)"), html.Div(dcc.Slider(0, 500, 10, value=0, id="amp-slider", marks={0: "0", 100: "100", 300: "300", 500: "500"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"})]),
-                        html.Div([html.Label("Wyboistość: częstotliwość [Hz] (opcjonalnie)"), html.Div(dcc.Slider(0.01, 1.0, 0.01, value=0.1, id="freq-slider", marks={0.01: "0.01", 0.1: "0.1", 0.5: "0.5", 1.0: "1.0"}, tooltip={"always_visible": True}), style={"width": "40%", "margin": "0 auto", "padding": "6px 0"})]),
+                    html.Div(
+                        style={
+                            "display": "grid",
+                            "gridTemplateColumns": "1fr 1fr",
+                            "gap": "20px",
+                            "padding": "20px"
+                        },
+                        children=[
+                            html.Div([
+                                html.Div([html.Label("Typ samochodu"), html.Div(
+                                    dcc.Dropdown(options=[{"label": PRESETS[k]["label"], "value": k} for k in PRESETS],
+                                                 value="compact", id="car-dropdown"),
+                                    style={"width": "65%", "margin": "0 auto", "padding": "6px 0"})]),
+                                html.Div([html.Label("Kąt nachylenia drogi [°]"), html.Div(
+                                    dcc.Slider(id="slope-slider", min=-15, max=15, step=0.5, value=0.0,
+                                               marks={-15: "-15°", -10: "-10°", -5: "-5°", 0: "0°", 5: "5°", 10: "10°",
+                                                      15: "15°", }, tooltip={"always_visible": False}, ),
+                                    style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}, ), ]),
+                            ]),
+                            html.Div([
+                                html.Div([html.Label("Wyboistość: częstotliwość [Hz] (opcjonalnie)"), html.Div(
+                                    dcc.Slider(0.0, 1.0, 0.01, value=0.1, id="freq-slider",
+                                               marks={0: "0.0", 0.1: "0.1", 0.5: "0.5", 1: "1.0"},
+                                               tooltip={"always_visible": False}),
+                                    style={"width": "100%", "margin": "0 auto", "padding": "6px 0"})]),
+                                html.Div([html.Label("Wyboistość: amplituda siły [N] (opcjonalnie)"), html.Div(
+                                    dcc.Slider(0, 500, 10, value=0, id="amp-slider",
+                                               marks={0: "0", 100: "100", 300: "300", 500: "500"},
+                                               tooltip={"always_visible": False}),
+                                    style={"width": "100%", "margin": "0 auto", "padding": "6px 0"})]),
+                            ]),
+                        ]
+                    )
+
+
                     ],
                     style={"maxWidth": "520px", "margin": "0 auto"},
                 ),
@@ -205,14 +245,19 @@ app.layout = html.Div(
     State("car-dropdown", "value"),
     State("amp-slider", "value"),
     State("freq-slider", "value"),
+    State("slope-slider", "value"),
     prevent_initial_call=True,
 )
-def update_plots(n_clicks, vd, vd2, tchange, vs_flag, v0, kp, ti, car_key, amp, freq):
+def update_plots(
+    n_clicks, vd, vd2, tchange, vs_flag, v0, kp, ti,
+    car_key, amp, freq, angle_deg
+):
+
     zmienna = ("on" in vs_flag)
     preset = PRESETS[car_key]
 
     # przygotuj nachylenia; domyślnie silniejszy podjazd (12°) aby efekt był widoczny
-    nachylenia = generuj_nachylenia()
+    nachylenia = generuj_nachylenia(angle_deg=angle_deg)
     if amp > 0:
         approx_angle_variation = (amp / (preset["m"] * G)) * (180.0 / np.pi)
         N = len(nachylenia)
