@@ -121,13 +121,16 @@ def symulacja(
     speed_kmh = [s * 3.6 for s in speed]
     return time, speed_kmh, F_drive, F_aero, F_slope, F_damp, vd_traj, angle_traj
 
-
-def generuj_nachylenia(Tsin=TSIN_DEFAULT, Tp=TP_DEFAULT, angle_deg=0.0):
+def generuj_nachylenia(Tsin=TSIN_DEFAULT, Tp=TP_DEFAULT, up_angle=12.0, down_angle=-5.0):
     N = int(Tsin / Tp)
     nachylenia = np.zeros(N)
-    nachylenia[:] = angle_deg
-
+    N1 = int(N * 0.35)
+    N2 = int(N * 0.3)
+    nachylenia[:N1] = 0.0
+    nachylenia[N1:N1+N2] = up_angle
+    nachylenia[N1+N2:] = down_angle
     return nachylenia
+
 
 
 
@@ -196,11 +199,6 @@ app.layout = html.Div(
                                     dcc.Dropdown(options=[{"label": PRESETS[k]["label"], "value": k} for k in PRESETS],
                                                  value="compact", id="car-dropdown"),
                                     style={"width": "65%", "margin": "0 auto", "padding": "6px 0"})]),
-                                html.Div([html.Label("Kąt nachylenia drogi [°]"), html.Div(
-                                    dcc.Slider(id="slope-slider", min=-15, max=15, step=0.5, value=0.0,
-                                               marks={-15: "-15°", -10: "-10°", -5: "-5°", 0: "0°", 5: "5°", 10: "10°",
-                                                      15: "15°", }, tooltip={"always_visible": False}, ),
-                                    style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}, ), ]),
                             ]),
                             html.Div([
                                 html.Div([html.Label("Wyboistość: częstotliwość [Hz] (opcjonalnie)"), html.Div(
@@ -245,19 +243,15 @@ app.layout = html.Div(
     State("car-dropdown", "value"),
     State("amp-slider", "value"),
     State("freq-slider", "value"),
-    State("slope-slider", "value"),
     prevent_initial_call=True,
 )
-def update_plots(
-    n_clicks, vd, vd2, tchange, vs_flag, v0, kp, ti,
-    car_key, amp, freq, angle_deg
-):
+def update_plots(n_clicks, vd, vd2, tchange, vs_flag, v0, kp, ti, car_key, amp, freq):
 
     zmienna = ("on" in vs_flag)
     preset = PRESETS[car_key]
 
     # przygotuj nachylenia; domyślnie silniejszy podjazd (12°) aby efekt był widoczny
-    nachylenia = generuj_nachylenia(angle_deg=angle_deg)
+    nachylenia = generuj_nachylenia()
     if amp > 0:
         approx_angle_variation = (amp / (preset["m"] * G)) * (180.0 / np.pi)
         N = len(nachylenia)
