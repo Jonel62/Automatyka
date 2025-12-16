@@ -209,15 +209,14 @@ app.layout = html.Div(
                                 html.Div([html.Label("Wyboistość: amplituda siły [N] (opcjonalnie)"), html.Div(
                                     dcc.Slider(0, 500, 10, value=0, id="amp-slider",
                                                marks={0: "0", 100: "100", 300: "300", 500: "500"},
-                                               tooltip={"always_visible": False}),
+                                               tooltip={"always_visible": False},),
                                     style={"width": "100%", "margin": "0 auto", "padding": "6px 0"})]),
-                            ]),
+                            ]
+                            ),
                         ]
                     )
-
-
                     ],
-                    style={"maxWidth": "520px", "margin": "0 auto"},
+                    style={"margin": "0 auto"},
                 ),
             ]
         ),
