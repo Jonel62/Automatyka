@@ -13,7 +13,8 @@ PRESETS = {
 
 RHO = 1.225
 B_CONST = 11.0        # stały współczynnik tłumienia [N·s/m]
-U_MIN, U_MAX = 0.0, 10.0
+# U_MIN zmienione na ujemne aby umożliwić hamowanie silnikiem (ujemny sygnał = siła hamująca)
+U_MIN, U_MAX = -10.0, 10.0
 G = 9.81
 TSIN_DEFAULT = 180.0
 TP_DEFAULT = 0.1
@@ -95,17 +96,20 @@ def symulacja(
         u_error = u_actual - u_unclamped
         integral_term += Ki * e + ant_windup_param * u_error
 
-        # siła napędu (dodatnia = napędzająca)
+        # siła napędu (dodatnia = napędzająca, ujemna = hamowanie silnikiem)
         f_drive = Kt * u_actual
 
         # zapisz siły (wartości z konwencją: dodatnie = napęd, ujemne = hamujące)
-        F_drive.append(f_drive)         # dodatnie
+        F_drive.append(f_drive)         # dodatnie -> napęd, ujemne -> hamowanie silnikiem
         F_aero.append(-f_aero)          # opór powietrza jako ujemny (hamujący)
-        F_slope.append(-f_slope)        # siła zbocza: pod górę -> ujemna (hamuje); z górki (f_slope<0) -> -f_slope>0 (wspomaga)
-        F_damp.append(-f_damp_mag)      # tłumienie jako ujemne
+        # siła zbocza: dodatnia gdy z górki (wspomaga), ujemna gdy pod górkę (hamuje)
+        F_slope.append(-f_slope)
+        F_damp.append(-f_damp_mag)      # tłumienie jako ujemne (stosowane w dynamice, ale nie rysowane)
 
-        # dynamika: m*dv/dt = f_drive - f_damp_mag - f_aero - f_slope
-        acc = (f_drive - f_damp_mag - f_aero - f_slope) / m
+        # dynamika: m*dv/dt = f_drive + f_slope + f_aero + f_damp
+        # (wszystkie siły mają już konwencję dodatnie = napęd / dodatnie = wspomaganie ruchu)
+        net_force = f_drive + (-f_damp_mag) + (-f_aero) + (-f_slope)  # zgodnie z wcześniejszymi definicjami
+        acc = net_force / m
         v_next = v + Tp * acc
         v_next = float(np.clip(v_next, 0.0, vmax))
 
@@ -138,7 +142,7 @@ def generuj_nachylenia(Tsin=TSIN_DEFAULT, Tp=TP_DEFAULT, up_angle=12.0, down_ang
 # --- UI: trzy zakładki (Prędkość, Regulator, Samochód) ---
 app.layout = html.Div(
     [
-        html.H1("Tempomat (PI)", style={"textAlign": "center"}),
+        html.H1("Symulacja tempomatu", style={"textAlign": "center"}),
         dcc.Tabs(
             [
                 dcc.Tab(
@@ -168,20 +172,6 @@ app.layout = html.Div(
                         ]
                     )
                     ],
-                ),
-                dcc.Tab(
-                    label="Regulator",
-                    children=[
-                        html.Div(
-                            [
-                                html.Label("Wzmocnienie Kp"),
-                                html.Div(dcc.Slider(1, 60, 1, value=10, id="kp-slider", marks={1: "1", 15: "15", 10: "10", 30: "30", 45: "45", 60: "60"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
-                                html.Label("Stała całkowania Ti [s]"),
-                                html.Div(dcc.Slider(1, 20, 1, value=5, id="ti-slider", marks={1: "1", 5: "5", 10: "10", 20: "20"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
-                            ],
-                            style={"maxWidth": "520px", "margin": "0 auto", "gap": "20px", "padding": "20px"},
-                        )
-                    ]
                 ),
                 dcc.Tab(
                     label="Samochód i droga",
@@ -217,6 +207,20 @@ app.layout = html.Div(
                     )
                     ],
                     style={"margin": "0 auto"},
+                ),
+                                dcc.Tab(
+                    label="Regulator",
+                    children=[
+                        html.Div(
+                            [
+                                html.Label("Wzmocnienie Kp"),
+                                html.Div(dcc.Slider(1, 60, 1, value=10, id="kp-slider", marks={1: "1", 15: "15", 10: "10", 30: "30", 45: "45", 60: "60"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
+                                html.Label("Czas zdwojenia [s]"),
+                                html.Div(dcc.Slider(1, 20, 1, value=5, id="ti-slider", marks={1: "1", 5: "5", 10: "10", 20: "20"}, tooltip={"always_visible": False}), style={"width": "100%", "margin": "0 auto", "padding": "6px 0"}),
+                            ],
+                            style={"maxWidth": "520px", "margin": "0 auto", "gap": "20px", "padding": "20px"},
+                        )
+                    ]
                 ),
             ]
         ),
@@ -288,16 +292,13 @@ def update_plots(n_clicks, vd, vd2, tchange, vs_flag, v0, kp, ti, car_key, amp, 
     fig_speed.update_layout(xaxis_title="Czas [s]", yaxis_title="Prędkość [km/h]", title="Prędkość pojazdu", yaxis=dict(range=[0, speed_axis_max]), template="plotly_white")
     fig_speed.update_xaxes(range=x_range)
 
-    # --- wykres sił: siły hamujące jako ujemne, napęd dodatni; kąt na drugiej osi y ---
+    # --- wykres sił: tylko 3 siły: siła napędu (dodatnia), opór aerodynamiczny (ujemny), siła zbocza (dodatnia gdy z górki) ---
     fig_forces = go.Figure()
     t_forces = time[:-1]
     fig_forces.add_trace(go.Scatter(x=t_forces, y=F_drive, name="Siła napędu [N]", line=dict(color="green")))
     fig_forces.add_trace(go.Scatter(x=t_forces, y=F_aero, name="Opór aerodynamiczny [N]", line=dict(color="red")))
-    fig_forces.add_trace(go.Scatter(x=t_forces, y=F_damp, name="Tłumienie b·v [N]", line=dict(color="purple")))
     fig_forces.add_trace(go.Scatter(x=t_forces, y=F_slope, name="Siła zbocza [N]", line=dict(color="orange")))
-    angle_aligned = angle_traj[:-1] if len(angle_traj) >= len(t_forces) else np.zeros(len(t_forces))
-    fig_forces.add_trace(go.Scatter(x=t_forces, y=angle_aligned, name="Kąt nachylenia [°]", yaxis="y2", line=dict(color="brown", dash="dot")))
-    fig_forces.update_layout(xaxis_title="Czas [s]", yaxis_title="Siła [N]", yaxis2=dict(title="Kąt [°]", overlaying="y", side="right", showgrid=False), title="Siły działające na pojazd i kąt nachylenia", template="plotly_white")
+    fig_forces.update_layout(xaxis_title="Czas [s]", yaxis_title="Siła [N]", title="Siły działające na pojazd", template="plotly_white")
     fig_forces.update_xaxes(range=x_range)
 
     return fig_speed, fig_forces
